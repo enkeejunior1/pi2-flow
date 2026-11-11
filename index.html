@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Remove the robots line below when the page goes public. -->
+<meta name="robots" content="noindex, nofollow">
+<title>π²-Flow: Analyzing and Improving π-Flow</title>
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/figure.css">
+<link rel="stylesheet" href="css/draw.css">
+<link rel="stylesheet" href="css/videos.css">
+<link rel="stylesheet" href="css/results.css">
+</head>
+<body id="top">
+
+<!-- Delete this one element before publication. -->
+
+<nav class="top" aria-label="Sections">
+  <span class="nav">
+    <a href="#teaser" aria-current="true">Teaser</a>
+    <a href="#principle">Principle</a>
+    <a href="#method">Method</a>
+    <a href="#results">Results</a>
+    <a href="#ablations">Ablations</a>
+    <a href="#bibtex">BibTeX</a>
+  </span>
+</nav>
+
+<header class="hero">
+  <div class="masthead">
+    <div class="id-col">
+      <h1>\(\pi^2\)-Flow <span class="sub">Analyzing and Improving \(\pi\)-Flow</span></h1>
+      <!-- authors: added at publication -->
+      <p class="authors">Anonymous authors</p>
+      <p class="affil">Under review</p>
+      <div class="links">
+        <span class="soon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>Paper <small>soon</small></span>
+        <span class="soon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 6-6 6 6 6M16 6l6 6-6 6"/></svg>Code <small>soon</small></span>
+        <a href="#bibtex"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10M7 12h10M7 16h6"/></svg>BibTeX</a>
+      </div>
+    </div>
+    <div class="tl-col">
+      <p class="kicker">TL;DR</p>
+      <p class="tldr">\(\pi\)-Flow trains its student against a teacher queried at states the teacher has never seen. \(\pi^2\)-Flow <em>lengthens jumps progressively</em>, so every teacher query stays where the teacher is reliable.</p>
+      <div class="short-abs">
+        <p>Flow-map distillation such as \(\pi\)-Flow keeps the diversity of a video diffusion teacher but trails distribution matching (DMD) in quality, most of all at 2 NFE. We trace the gap to <strong>state-dependent teacher reliability</strong>: \(\pi\)-Flow queries the teacher at states its own rollout reaches, and long jumps carry those states out of distribution.</p>
+        <p>\(\pi^2\)-Flow learns a 4-NFE policy with a short-to-long jump curriculum, then distills its trajectories into 2 NFE without querying the teacher at student states. On Wan2.1-1.3B it has the highest VBench score at 4 NFE (85.22) and 2 NFE (84.56), and stays more diverse than DMD.</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ Teaser: 4 and 2 NFE, then diversity ============ -->
+<section id="teaser" class="sec">
+  <div class="text">
+    <h2>Teaser videos</h2>
+  </div>
+  <div class="result wide" id="cmp" style="margin-top: var(--sp-3)">
+    <div class="card-head">
+      <p class="card-lede">Our \(\pi^2\)-Flow generates both 4-NFE and 2-NFE videos.</p>
+      <div class="seg" role="group" aria-label="Baselines at"><span class="seg-label">baselines at</span><button type="button" data-nfe="4" aria-pressed="false">4 NFE</button><button type="button" data-nfe="2" aria-pressed="true">2 NFE</button></div>
+    </div>
+    <div class="slot"></div>
+    <p class="card-note">Wan2.1-1.3B, 81 frames at 832&times;480, seed 0, on MovieGen Video Bench prompts (the models receive the extended prompts). We picked these ten by eye among the first 200 prompts, looking only at our 4- and 2-NFE videos; the baselines were then generated on the same prompts and seed. Every code base draws its own noise for a seed, so methods share the prompt and seed but not the noise; our 4- and 2-NFE videos share the noise. Baselines are the official checkpoints.</p>
+  </div>
+
+  <div class="result wide" id="div" style="margin-top: var(--sp-5)">
+    <div class="card-head">
+      <p class="card-lede">Our \(\pi^2\)-Flow generates diverse videos.</p>
+      <div class="seg" role="group" aria-label="All methods at"><span class="seg-label">all at</span><button type="button" data-nfe="4" aria-pressed="true">4 NFE</button><button type="button" data-nfe="2" aria-pressed="false">2 NFE</button></div>
+    </div>
+    <div class="slot"></div>
+    <p class="card-note">Wan2.1-1.3B, four seeds of one prompt, from the five-seed VBench evaluation at 4 and 2 NFE. These are selected, not representative: looking only at our videos, we picked the prompts by eye, nine of them among the 60 where our diversity margin over the more diverse of rCM and AnyFlow is largest at both NFEs (V-JEPA 2 and VideoMAE V2), and chose four of the five seeds per prompt; every method shows the same four seeds. Over all prompts, our V-JEPA 2 cosine distance at 4 NFE exceeds the mean of rCM and AnyFlow by 0.0186.</p>
+  </div>
+</section>
+
+<!-- ============ Design principle: Figure 1, drawn in the browser ============ -->
+<section id="principle" class="sec">
+  <div class="text">
+    <h2>Design principle</h2>
+    <p>\(\pi\)-Flow is on-policy: the student rolls out its own policy and is supervised by the teacher at the state it reaches. A diffusion teacher is reliable only near its own trajectories, and a velocity error moves the reached state in proportion to the jump length. So the longer the jump, the less the teacher can be trusted. This gives one principle: <strong>keep the student&rsquo;s queries near the teacher&rsquo;s trajectories.</strong></p>
+  </div>
+
+  <figure class="figure" id="fig-principle" aria-labelledby="fig-principle-cap">
+    <div class="legend" aria-hidden="true">
+      <span><i class="l-teacher"></i>teacher trajectory</span>
+      <span><i class="l-id"></i>teacher ID region</span>
+      <span><i class="l-student"></i>student rollout / 4 NFE</span>
+      <span><i class="l-tv"></i>teacher velocity</span>
+      <span><i class="l-stage2"></i>2-NFE student</span>
+    </div>
+    <p class="scroll-hint" hidden>Swipe sideways to see the whole figure.</p>
+    <div class="fig-scroll" tabindex="0" role="group" aria-label="Figure 1, state-dependent teacher reliability. Click, or use the left and right arrow keys, to step through.">
+      <svg class="fig-svg" viewBox="0 0 1040 296" role="img" aria-label="Diagram: π-Flow, state-dependent teacher reliability, and π²-Flow"></svg>
+    </div>
+    <div class="figctl"><button type="button" class="navbtn prev" aria-label="Previous step" title="Previous step"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M20 12H5M11 6l-6 6 6 6"/></svg></button><div class="chips" role="group" aria-label="Steps"></div><button type="button" class="navbtn next" aria-label="Next step" title="Next step"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button></div>
+    <p class="step-hint">Use the arrows or click the figure to step through.</p>
+    <figcaption id="fig-principle-cap"><strong>Figure 1.</strong> The vertical axis runs from noise (top) to data (bottom). (a)&nbsp;\(\pi\)-Flow matches its policy to the teacher at the state \(\hat{x}_t\) its rollout reaches. (b)&nbsp;A short jump keeps that state in the teacher&rsquo;s in-distribution region; a long one carries it out. From pure noise, the 64/128 jump of 2-NFE generation lowers the CLIP score of the teacher&rsquo;s continuation by 0.12 and its imaging quality by 0.34 (64 prompts). (c)&nbsp;\(\pi^2\)-Flow follows the principle in two stages.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ Method: Stage 1 curriculum, Stage 2 trajectory distillation ============ -->
+<section id="method" class="sec">
+  <div class="text">
+    <h2>Method: lengthen jumps progressively</h2>
+    <p>Stage&nbsp;1 trains a 4-NFE policy with on-policy \(\pi\)-Flow, opening short jumps first. Stage&nbsp;2 distills its trajectories into a 2-NFE student, whose single jump from noise would be too long to query the teacher safely.</p>
+  </div>
+
+  <div class="fig-row" style="margin-top: var(--sp-4)">
+    <figure class="figure" id="fig-stage1" aria-labelledby="fig-stage1-cap">
+      <h3>Stage 1 &middot; jump-length curriculum</h3>
+      <div class="fig-scroll" style="cursor: default">
+        <svg class="fig-svg" viewBox="0 0 500 300" role="img" aria-label="Diagram: segment 2 enlarged; small arrows are appended along the teacher's trajectory as query bins open"></svg>
+      </div>
+      <div class="controls">
+        <button type="button" class="pp" aria-label="Play" aria-pressed="false"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><path class="i-play" d="M5.5 3.2v9.6L13 8z"/><path class="i-pause" d="M4.5 3.2h2.6v9.6H4.5zM8.9 3.2h2.6v9.6H8.9z"/></svg></button>
+        <input type="range" min="0" max="256" value="256" aria-label="Training iteration">
+        <span class="time">j = 256</span>
+      </div>
+      <figcaption id="fig-stage1-cap">One segment enlarged (\(\sigma_{K/4}\) to \(\sigma_{K/2}\)); segments 1 to 3 run the same curriculum. Query levels are split into \(B = 64\) bins, and at iteration \(j\) of \(J = 256\) the \(\lceil jB/J \rceil\) bins closest to the source are open. The arrows are the student&rsquo;s longest jump along the teacher&rsquo;s trajectory: it grows with training while short jumps stay active, so its end stays where the teacher is reliable.</figcaption>
+    </figure>
+
+    <figure class="figure" id="fig-stage2" aria-labelledby="fig-stage2-cap">
+      <h3>Stage 2 &middot; distill the 4-NFE trajectories</h3>
+      <div class="fig-scroll" tabindex="0" role="group" aria-label="Stage 2 figure. Click, or use the left and right arrow keys, to step through.">
+        <svg class="fig-svg" viewBox="0 0 500 300" role="img" aria-label="Diagram: the 2-NFE student's two jumps converge onto the frozen 4-NFE trajectory"></svg>
+      </div>
+      <div class="figctl"><button type="button" class="navbtn prev" aria-label="Previous step" title="Previous step"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M20 12H5M11 6l-6 6 6 6"/></svg></button><div class="chips" role="group" aria-label="Steps"></div><button type="button" class="navbtn next" aria-label="Next step" title="Next step"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button></div>
+      <figcaption id="fig-stage2-cap">The 2-NFE student is evaluated at the noise and at the expert&rsquo;s midpoint state, and its policy is matched to the frozen 4-NFE policy at every grid level along the expert&rsquo;s trajectory. Trained directly with \(\pi\)-Flow instead, a 2-NFE model reaches only 82.40 to 83.17 VBench.</figcaption>
+    </figure>
+  </div>
+
+  <details>
+    <summary>Details</summary>
+    <h4>Stage 1</h4>
+    <p><strong>Guided initialization.</strong> The teacher is strongly guided (\(w = 9\)), while the student starts from the unguided base model. Absorbing the guidance alone takes about 256 updates, so we first distill the guided teacher into the student (KD) before Stage&nbsp;1.</p>
+    <p><strong>\(\Delta\sigma\) action weighting.</strong> We supervise the displacement over each grid interval rather than the raw velocity, which scales the residual by the interval width \(\Delta\sigma\). Under the shifted noise schedule, intervals widen toward the clean end of each segment, so the long jumps that the curriculum visits less often get commensurate weight. In the final segment, \(\Delta\sigma\) becomes too large, so there we sample query levels uniformly with unit weights.</p>
+    <p>Removing either KD or the curriculum with \(\Delta\sigma\) weighting costs 0.7 to 1.0 VBench points at 4 NFE (<a href="#ablations">Ablations</a>).</p>
+    <h4>Stage 2</h4>
+    <p><strong>A fixed set of trajectories.</strong> Sampling fresh prompt&ndash;noise pairs at every update makes the Stage&nbsp;2 loss plateau early. Precomputing the expert trajectories for a <strong>fixed set of 64 pairs</strong> and taking full-batch updates on them lets the loss keep falling, and raises 2-NFE VBench from 83.51 to 84.56 on unseen prompts, with a moderate cost in diversity.</p>
+    <figure class="chart" id="chart-loss">
+      <svg viewBox="0 0 640 290" role="img" aria-label="Stage 2 training loss: fresh pairs plateau near 28, the fixed set falls to about 18"></svg>
+      <figcaption>Wan2.1-1.3B, same objective and optimizer. The fixed-set curve is the loss on its 64 training pairs.</figcaption>
+    </figure>
+  </details>
+</section>
+
+<!-- ============ Results (layout of the current page) ============ -->
+<section id="results" class="sec">
+  <div class="text">
+    <h2>Results on Wan2.1-1.3B and 14B</h2>
+    <p>On Wan2.1-1.3B, \(\pi^2\)-Flow has the highest VBench score at both 4 NFE (85.22) and 2 NFE (84.56), about one point above our reproduction of the \(\pi\)-Flow-based PDD at each. On Wan2.1-14B it is competitive with the DMD-based methods but not ahead: close to rCM and below AnyFlow at 4 NFE, and below both at 2 NFE, while having the highest Quality score and dynamic degree in both settings.</p>
+  </div>
+
+  <figure class="chart" id="chart-vbench">
+    <div class="fig-scroll" tabindex="0" role="group" aria-label="VBench chart. Click, or use the left and right arrow keys, to step through.">
+      <svg viewBox="0 0 640 310" role="img" aria-label="VBench Total on Wan2.1-1.3B at 4 and 2 NFE: flow-map methods, then DMD-based baselines"></svg>
+    </div>
+    <div class="legend"></div>
+    <div class="figctl"><button type="button" class="navbtn prev" aria-label="Previous step" title="Previous step"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M20 12H5M11 6l-6 6 6 6"/></svg></button><div class="chips" role="group" aria-label="Steps"></div><button type="button" class="navbtn next" aria-label="Next step" title="Next step"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button></div>
+    <figcaption>Wan2.1-1.3B, VBench Total, five-seed means on the extended prompts. Flow-map methods (\(\pi\)-Flow family) are grouped on the left of each NFE, DMD-based baselines on the right. †Our reproduction with the official recipe, best checkpoint. *Our evaluation of the official checkpoint. SMD has no 2-NFE model. The axis starts at 82.</figcaption>
+  </figure>
+
+  <div class="tbl-wrap" tabindex="0" aria-label="Comparison on Wan2.1 at 4 and 2 NFE">
+    <table>
+      <thead>
+        <tr><th rowspan="2">Model</th><th rowspan="2" class="m">Method</th><th rowspan="2" class="l">Type</th><th rowspan="2">NFE</th><th colspan="4" class="grp">VBench ↑</th><th colspan="2" class="grp">V-JEPA 2 ↑</th><th colspan="2" class="grp">VideoMAE V2 ↑</th></tr>
+        <tr><th>Total</th><th>Quality</th><th>Semantic</th><th>Dynamic</th><th>Cos</th><th>L2</th><th>Cos</th><th>L2</th></tr>
+      </thead>
+      <tbody>
+<tr class="group-start teacher"><td class="model">Wan2.1-1.3B</td><td class="m">UniPC (Teacher)</td><td class="l">ODE</td><td>50×2</td><td>81.87</td><td>82.63</td><td>78.84</td><td>66.2</td><td>0.0997</td><td>28.9</td><td>0.0217</td><td>3.41</td></tr>
+<tr class="block-start"><td class="model"></td><td class="m">rCM<sup>*</sup></td><td class="l">DMD</td><td>4</td><td>84.13</td><td>85.00</td><td>80.65</td><td>81.4</td><td>0.0634</td><td>22.7</td><td>0.0126</td><td>2.60</td></tr>
+<tr><td class="model"></td><td class="m">AnyFlow<sup>*</sup></td><td class="l">DMD</td><td>4</td><td>84.89</td><td>85.47</td><td>82.57</td><td>69.0</td><td>0.0537</td><td>21.2</td><td>0.0102</td><td>2.35</td></tr>
+<tr class="fm-start"><td class="model"></td><td class="m">PDD<sup>†</sup></td><td class="l">flow map</td><td>4</td><td>84.08</td><td>85.22</td><td>79.49</td><td>87.8</td><td>0.1068</td><td>29.5</td><td>0.0252</td><td>3.72</td></tr>
+<tr><td class="model"></td><td class="m">SMD<sup>*</sup></td><td class="l">flow map</td><td>4</td><td>84.52</td><td>85.63</td><td>80.06</td><td>75.4</td><td>0.0801</td><td>26.1</td><td>0.0163</td><td>2.95</td></tr>
+<tr class="ours"><td class="model"></td><td class="m">\(\pi^2\)-Flow <span class="k">(ours)</span></td><td class="l">flow map</td><td>4</td><td>85.22</td><td>86.74</td><td>79.17</td><td>85.8</td><td>0.0772</td><td>25.3</td><td>0.0134</td><td>2.72</td></tr>
+<tr class="block-start"><td class="model"></td><td class="m">rCM<sup>*</sup></td><td class="l">DMD</td><td>2</td><td>84.10</td><td>84.85</td><td>81.13</td><td>77.2</td><td>0.0626</td><td>22.7</td><td>0.0125</td><td>2.58</td></tr>
+<tr><td class="model"></td><td class="m">AnyFlow<sup>*</sup></td><td class="l">DMD</td><td>2</td><td>83.98</td><td>84.40</td><td>82.30</td><td>61.0</td><td>0.0522</td><td>21.1</td><td>0.0096</td><td>2.29</td></tr>
+<tr class="fm-start"><td class="model"></td><td class="m">PDD<sup>†</sup></td><td class="l">flow map</td><td>2</td><td>83.54</td><td>84.80</td><td>78.52</td><td>85.0</td><td>0.1068</td><td>29.6</td><td>0.0258</td><td>3.76</td></tr>
+<tr class="ours"><td class="model"></td><td class="m">\(\pi^2\)-Flow <span class="k">(ours)</span></td><td class="l">flow map</td><td>2</td><td>84.56</td><td>86.02</td><td>78.72</td><td>84.0</td><td>0.0639</td><td>23.0</td><td>0.0104</td><td>2.41</td></tr>
+<tr class="group-start teacher"><td class="model">Wan2.1-14B</td><td class="m">UniPC (Teacher)</td><td class="l">ODE</td><td>50×2</td><td>82.79</td><td>83.26</td><td>80.88</td><td>57.4</td><td>0.1023</td><td>29.4</td><td>0.0242</td><td>3.58</td></tr>
+<tr class="block-start"><td class="model"></td><td class="m">rCM<sup>*</sup></td><td class="l">DMD</td><td>4</td><td>84.87</td><td>85.34</td><td>83.02</td><td>62.8</td><td>0.0544</td><td>21.0</td><td>0.0122</td><td>2.48</td></tr>
+<tr><td class="model"></td><td class="m">AnyFlow<sup>*</sup></td><td class="l">DMD</td><td>4</td><td>85.30</td><td>85.89</td><td>82.97</td><td>71.6</td><td>0.0609</td><td>22.4</td><td>0.0134</td><td>2.63</td></tr>
+<tr class="fm-start"><td class="model"></td><td class="m">PDD<sup>†</sup></td><td class="l">flow map</td><td>4</td><td>84.32</td><td>84.64</td><td>83.04</td><td>58.4</td><td>0.0957</td><td>28.2</td><td>0.0230</td><td>3.48</td></tr>
+<tr><td class="model"></td><td class="m">SMD<sup>*</sup></td><td class="l">flow map</td><td>4</td><td>84.64</td><td>85.40</td><td>81.57</td><td>77.4</td><td>0.0593</td><td>21.8</td><td>0.0155</td><td>2.90</td></tr>
+<tr class="ours"><td class="model"></td><td class="m">\(\pi^2\)-Flow <span class="k">(ours)</span></td><td class="l">flow map</td><td>4</td><td>84.84</td><td>86.25</td><td>79.19</td><td>84.4</td><td>0.0708</td><td>24.2</td><td>0.0143</td><td>2.78</td></tr>
+<tr class="block-start"><td class="model"></td><td class="m">rCM<sup>*</sup></td><td class="l">DMD</td><td>2</td><td>84.67</td><td>85.13</td><td>82.85</td><td>56.6</td><td>0.0540</td><td>21.0</td><td>0.0124</td><td>2.51</td></tr>
+<tr><td class="model"></td><td class="m">AnyFlow<sup>*</sup></td><td class="l">DMD</td><td>2</td><td>85.01</td><td>85.50</td><td>83.03</td><td>64.2</td><td>0.0590</td><td>22.2</td><td>0.0123</td><td>2.54</td></tr>
+<tr class="fm-start"><td class="model"></td><td class="m">PDD<sup>†</sup></td><td class="l">flow map</td><td>2</td><td>83.59</td><td>84.00</td><td>81.95</td><td>53.2</td><td>0.0926</td><td>27.8</td><td>0.0221</td><td>3.40</td></tr>
+<tr class="ours"><td class="model"></td><td class="m">\(\pi^2\)-Flow <span class="k">(ours)</span></td><td class="l">flow map</td><td>2</td><td>84.39</td><td>85.54</td><td>79.76</td><td>83.0</td><td>0.0613</td><td>22.5</td><td>0.0112</td><td>2.47</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-note">VBench scores and dynamic degree are five-seed means. The V-JEPA 2 and VideoMAE V2 columns measure diversity as the mean pairwise feature distance among five videos per prompt (higher is more diverse). Within each block, darker means a higher rank among the distilled models; the teacher is not ranked. A dashed line separates the DMD-based methods from the flow-map methods.</p>
+
+  <div class="stats">
+    <div class="stat"><b>85.22</b><span>VBench at 4 NFE on 1.3B, the highest among all distilled models</span></div>
+    <div class="stat"><b>84.56</b><span>VBench at 2 NFE on 1.3B, +1.0 over the \(\pi\)-Flow-based PDD</span></div>
+    <div class="stat"><b>0.0772</b><span>V-JEPA 2 diversity at 4 NFE on 1.3B, vs. 0.0634 (rCM) and 0.0537 (AnyFlow)</span></div>
+  </div>
+</section>
+
+<!-- ============ Ablations ============ -->
+<section id="ablations" class="sec">
+  <div class="text">
+    <h2>Ablations</h2>
+    <p>All on Wan2.1-1.3B with VBench Total averaged over five seeds. Stage&nbsp;1 variants are evaluated at 4 NFE and Stage&nbsp;2 variants at 2 NFE.</p>
+  </div>
+  <div class="tbl-pair">
+    <div>
+      <h3>Stage 1 (4 NFE)</h3>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Variant</th><th>VBench ↑</th></tr></thead>
+        <tbody>
+          <tr class="ours"><td class="m">Ours (Stage 1)</td><td>85.22</td></tr>
+          <tr><td class="m">&minus; KD</td><td>84.23</td></tr>
+          <tr><td class="m">&minus; curriculum and \(\Delta\sigma\)</td><td>84.51</td></tr>
+          <tr><td class="m">&minus; both (\(\pi\)-Flow, uniform queries)</td><td>83.00</td></tr>
+        </tbody>
+      </table></div>
+      <p class="tbl-note" style="margin-inline: 0">Removing either guided initialization or the curriculum with \(\Delta\sigma\) weighting costs 0.7 to 1.0 points.</p>
+    </div>
+    <div>
+      <h3>Stage 2 (2 NFE)</h3>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>2-NFE training</th><th>VBench ↑</th></tr></thead>
+        <tbody>
+          <tr class="ours"><td class="m">Stage 2, fixed set (ours)</td><td>84.56</td></tr>
+          <tr><td class="m">Stage 2, fresh pairs</td><td>83.51</td></tr>
+          <tr><td class="m">Direct \(\pi\)-Flow from \(\pi^{\text{4NFE}}\)</td><td>83.17</td></tr>
+          <tr><td class="m">Direct \(\pi\)-Flow, Stage 1 recipe</td><td>82.40</td></tr>
+        </tbody>
+      </table></div>
+      <p class="tbl-note" style="margin-inline: 0">Training 2 NFE directly stays below Stage 2 for either initialization; a fixed set of 64 trajectories adds another 1.05 points.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BibTeX ============ -->
+<section id="bibtex" class="sec">
+  <div class="text"><h2>BibTeX</h2></div>
+  <div class="bib"><pre>@article{pi2flow2026,
+  title   = {$\pi^2$-Flow: Analyzing and Improving $\pi$-Flow},
+  author  = {Anonymous},
+  journal = {Under review},
+  year    = {2026}
+}</pre></div>
+</section>
+
+</main>
+
+<footer><span>\(\pi^2\)-Flow: Analyzing and Improving \(\pi\)-Flow</span><a href="#top">Back to top ↑</a></footer>
+
+<script>window.MathJax = { tex: { inlineMath: [['\\(', '\\)']] }, svg: { fontCache: 'none' }, options: { enableMenu: false } };</script>
+<script src="vendor/mathjax/tex-svg.js"></script>
+<script src="js/core.js"></script>
+<script src="media/manifest.js"></script>
+<script src="js/data.js"></script>
+<script src="js/draw.js"></script>
+<script src="js/stepfig.js"></script>
+<script src="js/videos.js"></script>
+<script src="js/data-principle.js"></script>
+<script src="js/fig-principle.js"></script>
+<script src="js/fig-method.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/page.js"></script>
+</body>
+</html>

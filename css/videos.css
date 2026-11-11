@@ -1,0 +1,115 @@
+/* ---------- Video players ---------- */
+.group { margin: 0 0 var(--sp-2); }
+.group:last-child { margin-bottom: 0; }
+.group .prompt { font-size: 14px; color: var(--muted); margin: 0 0 6px; font-family: var(--serif); font-style: italic; }
+.players { display: grid; gap: 10px; grid-template-columns: repeat(var(--n, 1), 1fr); }
+.player { position: relative; z-index: 41; background: var(--video-plate); border-radius: var(--radius); overflow: hidden; aspect-ratio: 16 / 9; }
+.player video { width: 100%; height: 100%; display: block; object-fit: contain; background: var(--video-plate); }
+.player .label { position: absolute; left: 8px; top: 8px; background: var(--video-label-bg); color: var(--video-label-ink); font: 400 11px/1.4 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 7px; border-radius: var(--radius); }
+.player .failed-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 12px; color: var(--video-fail-ink); background: var(--video-fail-bg); font-size: 13px; }
+.player .failed-msg code { color: var(--video-fail-code); word-break: break-all; }
+/* Play bar under a video group: a small round icon button, a thin scrub line and the time. Quiet and always visible
+ * (nothing waits for a hover, so touch screens see it), neutral colors only. The line is a range input that paints
+ * its own filled part from --p (set in js/videos.js); the thumb shows on hover, focus and drag, and always on touch. */
+.controls { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.controls .pp {
+  position: relative; flex: none; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;
+  padding: 0; border: 1px solid var(--line); border-radius: 50%; background: none; color: var(--muted); cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+.controls .pp::after { content: ""; position: absolute; inset: -8px; }   /* 44 px touch target around the 28 px circle */
+.controls .pp svg { display: block; fill: currentColor; }
+.controls .pp .i-pause, .controls .pp[aria-pressed="true"] .i-play { display: none; }
+.controls .pp[aria-pressed="true"] .i-pause { display: inline; }
+.controls .pp:hover { color: var(--ink); border-color: var(--muted); }
+.controls .pp:focus-visible, .controls input[type=range]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.controls input[type=range] {
+  --p: 0%; flex: 1; min-width: 0; height: 16px; margin: 0; padding: 0; cursor: pointer;
+  -webkit-appearance: none; appearance: none; border: 0; border-radius: 0;
+  background: linear-gradient(to right, color-mix(in srgb, var(--muted) 75%, transparent) var(--p), var(--line) var(--p)) center / 100% 2px no-repeat;
+}
+.controls input[type=range]::-webkit-slider-runnable-track { height: 16px; background: transparent; border: 0; }
+.controls input[type=range]::-moz-range-track { height: 16px; background: transparent; border: 0; }
+.controls input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 10px; height: 10px; margin-top: 3px; border: 0; border-radius: 50%;
+  background: var(--muted); opacity: 0; transition: opacity 0.2s ease;
+}
+.controls input[type=range]::-moz-range-thumb { width: 10px; height: 10px; border: 0; border-radius: 50%; background: var(--muted); opacity: 0; transition: opacity 0.2s ease; }
+.controls:hover input[type=range]::-webkit-slider-thumb, .controls input[type=range]:focus-visible::-webkit-slider-thumb, .controls input[type=range]:active::-webkit-slider-thumb { opacity: 1; }
+.controls:hover input[type=range]::-moz-range-thumb, .controls input[type=range]:focus-visible::-moz-range-thumb, .controls input[type=range]:active::-moz-range-thumb { opacity: 1; }
+.controls .time { font: 400 12px/1 var(--mono); color: var(--faint); min-width: 84px; text-align: right; font-variant-numeric: tabular-nums; }
+@media (hover: none) {
+  .controls input[type=range]::-webkit-slider-thumb { opacity: 1; }
+  .controls input[type=range]::-moz-range-thumb { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .controls .pp, .controls input[type=range]::-webkit-slider-thumb, .controls input[type=range]::-moz-range-thumb { transition: none; }
+}
+
+/* ---------- Scene selector (slots with data-select): one thumbnail button per scene, directly above the video grid ----------
+ * Active scene: accent outline on its thumbnail, full opacity. Other scenes: dimmed, full opacity on hover or focus.
+ * Six in a row on desktop; three per row on phones. The title is visually hidden; if a thumbnail fails to load, js removes it and the title shows. */
+.scene-select { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--sp-2) 12px; margin: 0 0 var(--sp-3); padding: 2px 2px 0; }
+.scene-select button {
+  display: flex; flex-direction: column; align-items: stretch; gap: 8px; min-width: 0; padding: 0; border: 0; background: none;
+  color: var(--muted); cursor: pointer; text-align: left; font: 400 13px/1.3 var(--mono);
+}
+.scene-select button:focus-visible { outline: 2px solid var(--ink); outline-offset: 5px; }
+.scene-thumb { display: block; aspect-ratio: 832 / 480; background: var(--video-plate); border-radius: var(--radius); overflow: visible; }
+.scene-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius); opacity: 0.62; }
+.scene-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.scene-select button.no-thumb .scene-title { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; display: block; text-wrap: balance; overflow-wrap: anywhere; }
+.scene-select button:hover .scene-thumb img, .scene-select button:focus-visible .scene-thumb img { opacity: 1; }
+.scene-select button:hover .scene-title, .scene-select button:focus-visible .scene-title { color: var(--ink); }
+.scene-select button[aria-pressed="true"] .scene-thumb { outline: 2px solid var(--accent); outline-offset: 0; }
+.scene-select button[aria-pressed="true"] .scene-thumb img { opacity: 1; }
+.scene-select button[aria-pressed="true"] .scene-title { color: var(--ink); }
+.scene-select button.no-thumb .scene-thumb { display: none; }
+.scene-select button.no-thumb { justify-content: center; padding: 10px 8px; border: 1px solid var(--line); border-radius: var(--radius); }
+.scene-select button.no-thumb[aria-pressed="true"] { border-color: var(--accent); }
+
+/* ---------- Wide cards: the quality and diversity comparisons are wider than the 1040 px column ---------- */
+.wide { width: min(1360px, calc(100vw - 2 * var(--gutter)), calc(100vw - 2 * var(--side-nav-room, 0px))); margin-inline: 50%; transform: translateX(-50%); }
+.card-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); margin: 0 0 var(--sp-2); }
+.card-head h3 { margin: 0; }
+.card-note { max-width: var(--measure); margin: var(--sp-2) auto 0; font-size: 13px; line-height: 1.55; color: var(--faint); }
+
+/* Segmented switch (baselines at 4 or 2 NFE): plain text tabs, thin underline on the active one, like the figure chips */
+.seg { display: inline-flex; gap: 2px; font: 400 13px/1 var(--mono); color: var(--muted); }
+.seg .seg-label { padding: 10px 6px 10px 0; color: var(--faint); }
+.seg button { min-height: 34px; padding: 0 10px; border: 0; background: none; color: var(--muted); cursor: pointer; font: inherit; }
+.seg button:hover { color: var(--ink); }
+.seg button[aria-pressed="true"] { color: var(--accent); box-shadow: inset 0 -1px 0 var(--accent); }
+
+/* Tile captions sit above the tiles, in the mono label style; ours is in the accent */
+.player.ours { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tile { min-width: 0; }
+.tile-cap { display: flex; align-items: baseline; gap: 6px; margin: 0 0 6px; font: 400 12px/1.3 var(--mono); letter-spacing: 0.02em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile-cap b { font-weight: 500; color: var(--ink); }
+.tile-cap .k { color: var(--faint); }
+.tile.ours .tile-cap b { color: var(--accent); }
+.player { aspect-ratio: 832 / 480; }
+
+/* Quality: one row of tiles per scene, ours first */
+#cmp .players { grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 10px; }
+#cmp .group .prompt { margin: 10px 0 0; font-size: 15px; }
+#cmp .scene-select, #div .scene-select { grid-template-columns: repeat(10, minmax(0, 1fr)); max-width: 1240px; margin-inline: auto; }
+#teaser .card-head { flex-direction: column; align-items: center; gap: 10px; margin-bottom: var(--sp-3); text-align: center; }
+#teaser .card-lede { margin: 0; font-size: 17px; line-height: 1.4; color: var(--muted); text-wrap: balance; }
+
+/* Diversity: one 2 x 2 block of seeds per method */
+#div .players { grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: var(--sp-3); }
+#div .block .seeds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+#div .block.ours .seeds { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: var(--radius); }
+#div .group .prompt { margin: 10px 0 0; font-size: 15px; }
+
+@media (max-width: 899px) {
+  #cmp .players { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #div .players { grid-template-columns: minmax(0, 1fr); }
+  #cmp .scene-select, #div .scene-select { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .card-head { flex-direction: column; align-items: flex-start; gap: 4px; }
+}
+@media (max-width: 640px) {
+  .players { grid-template-columns: 1fr; }
+  .controls .time { min-width: 0; }
+}

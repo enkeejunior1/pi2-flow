@@ -1,0 +1,102 @@
+/* Results, ablations, details and BibTeX: charts (js/charts.js), tables, disclosure blocks. */
+
+/* ---------- Charts ---------- */
+.chart { margin: var(--sp-4) auto 0; max-width: 720px; }
+.chart > svg, .chart .fig-scroll > svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart svg text { font-family: var(--sans); }
+.chart .mono { font: 400 11px var(--mono); fill: var(--faint); }
+.chart .lbl { font-size: 14px; font-weight: 500; fill: var(--ink); }
+.c-grid { fill: none; stroke: var(--line); stroke-width: 1; }
+.c-axis { fill: none; stroke: var(--muted); stroke-width: 1.2; }
+.bar { transition: y 0.7s cubic-bezier(.2,.7,.2,1), height 0.7s cubic-bezier(.2,.7,.2,1), opacity 0.3s ease; }
+.bar.dim { opacity: 0.45; }
+.c-bracket { fill: none; stroke: var(--ghost); stroke-width: 1; }
+.c-gainline { fill: none; stroke: var(--ground); stroke-width: 1.6; stroke-dasharray: 4 3; }
+.gain { opacity: 0; transition: opacity 0.3s ease 0.7s; }
+.gain.on { opacity: 1; }
+.chart .gain-v { fill: var(--accent); font-weight: 600; font-size: 12px; }
+.chart .fig-scroll { cursor: pointer; }
+.chart .figctl, .chart .steplabel { text-align: center; }
+.b-base { fill: color-mix(in srgb, var(--accent) 22%, var(--ground)); }
+.b-base2 { fill: color-mix(in srgb, var(--accent) 40%, var(--ground)); }
+.b-ours { fill: var(--accent); }
+.b-dmd { fill: color-mix(in srgb, var(--grey) 16%, var(--ground)); stroke: var(--grey); stroke-width: 1; }
+.b-dmd2 { fill: color-mix(in srgb, var(--grey) 34%, var(--ground)); stroke: var(--grey); stroke-width: 1; }
+.chart .val { stroke: none; opacity: 0; transition: opacity 0.3s ease; font-weight: 500; }
+.chart .val.on { opacity: 1; }
+.chart .val.b-base2 { fill: color-mix(in srgb, var(--ghost) 55%, var(--muted)); }
+.b-ours { fill: var(--accent); }
+.chart .val.b-base, .chart .val.b-base2, .chart .val.b-dmd, .chart .val.b-dmd2 { fill: var(--muted); }
+.chart .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-dasharray: 100 100; stroke-dashoffset: 100; transition: stroke-dashoffset 1.6s ease-out; }
+.chart .line.on { stroke-dashoffset: 0; }
+.chart .l-fresh { stroke: var(--grey); }
+.chart .l-fixed { stroke: var(--accent); }
+.chart .lab { opacity: 0; transition: opacity 0.3s ease 1.4s; }
+.chart .lab.on { opacity: 1; }
+.chart .lab.c-student { fill: var(--accent); }
+.chart .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 20px; margin-top: var(--sp-2); font: 400 12px/1.4 var(--mono); color: var(--ink); }
+.chart .legend > span { display: inline-flex; align-items: center; gap: 7px; }
+.chart .legend .k { color: var(--faint); }
+.chart .legend span.nm { display: inline; }
+.chart .legend mjx-container, .tile-cap mjx-container { margin-right: -0.25em; }
+.chart .legend i.sw { display: inline-block; width: 12px; height: 12px; border: 0; border-radius: 1px; }
+.sw.b-base { background: color-mix(in srgb, var(--accent) 22%, var(--ground)); }
+.sw.b-base2 { background: color-mix(in srgb, var(--accent) 40%, var(--ground)); }
+.sw.b-ours { background: var(--accent); }
+.sw.b-dmd { background: color-mix(in srgb, var(--grey) 16%, var(--ground)); box-shadow: inset 0 0 0 1px var(--grey); }
+.sw.b-dmd2 { background: color-mix(in srgb, var(--grey) 34%, var(--ground)); box-shadow: inset 0 0 0 1px var(--grey); }
+.chart figcaption, .tbl-note { max-width: var(--measure); margin: var(--sp-2) auto 0; font-size: 13px; line-height: 1.55; color: var(--faint); }
+
+/* ---------- Tables: hairlines only, numbers in mono, ours in the accent ---------- */
+.tbl-wrap { max-width: var(--content-width); margin: var(--sp-4) auto 0; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { padding: 7px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
+th:first-child, td:first-child, th.l, td.l, td.m, th.m { text-align: left; }
+thead th { font: 400 11px/1.3 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--faint); border-bottom: 1px solid var(--muted); }
+thead tr:first-child th.grp { text-align: center; border-bottom: 1px solid var(--line); }
+td { font: 400 13px/1.3 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+td.m, td.model { font-family: var(--sans); font-size: 14px; color: var(--ink); }
+td.model { color: var(--faint); font-size: 13px; }
+tr.block-start td { border-top: 1px solid var(--ghost); }
+tr.teacher td { color: var(--faint); font-style: italic; }
+tr.ours td { color: var(--ink); background: color-mix(in srgb, var(--accent) 7%, transparent); }
+tr.ours td.m { color: var(--accent); font-weight: 500; }
+/* Rank shading within each block (js/charts.js): darker is a higher rank. */
+tr td.r1 { color: var(--blue); font-weight: 600; }
+tr td.r2 { color: color-mix(in srgb, var(--blue) 78%, var(--ground)); }
+tr td.r3 { color: color-mix(in srgb, var(--blue) 56%, var(--ground)); }
+tr td.r4 { color: color-mix(in srgb, var(--blue) 42%, var(--ground)); }
+tr td.r5 { color: color-mix(in srgb, var(--blue) 32%, var(--ground)); }
+tr.fm-start td { border-top: 1px dashed var(--ghost); }
+.tbl-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); max-width: var(--content-width); margin: var(--sp-3) auto 0; }
+.tbl-pair .tbl-wrap { margin: 0; }
+.tbl-pair h3 { font-size: 18px; margin: 0 0 var(--sp-1); }
+
+/* ---------- Disclosure blocks (details that the walkthrough leaves out) ---------- */
+details { max-width: var(--measure); margin: var(--sp-3) auto 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+details + details { margin-top: -1px; }
+summary { padding: 14px 0; cursor: pointer; list-style: none; font: 400 13px/1.4 var(--mono); color: var(--ink); display: flex; justify-content: space-between; gap: var(--sp-2); }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; color: var(--faint); }
+details[open] summary::after { content: "\2212"; }
+details > :not(summary) { font-size: 15px; color: var(--muted); }
+details > .chart { max-width: 100%; }
+details > h4 { margin: var(--sp-2) 0 6px; font: 600 13px/1.4 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); }
+details[open] { padding-bottom: var(--sp-2); }
+
+/* ---------- Key numbers line ---------- */
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); max-width: var(--content-width); margin: var(--sp-4) auto 0; }
+.stat { border-top: 1px solid var(--ink); padding-top: 12px; }
+.stat b { display: block; font: 400 34px/1.1 var(--serif); color: var(--accent); }
+.stat span { display: block; margin-top: 6px; font-size: 14px; color: var(--muted); line-height: 1.45; }
+
+/* ---------- BibTeX ---------- */
+.bib { position: relative; max-width: var(--measure); margin: 0 auto; }
+.bib pre { margin: 0; padding: var(--sp-2); overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); font-size: 12.5px; line-height: 1.6; color: var(--ink); background: color-mix(in srgb, var(--ink) 3%, transparent); }
+
+footer { width: min(var(--page-w), 100%); margin: 0 auto; padding: var(--sp-3) var(--gutter) var(--sp-5); display: flex; justify-content: space-between; font: 400 12px/1.4 var(--mono); color: var(--faint); }
+footer a { color: var(--muted); }
+
+@media (max-width: 899px) {
+  .tbl-pair, .stats { grid-template-columns: minmax(0, 1fr); }
+}

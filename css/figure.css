@@ -1,0 +1,88 @@
+/* Step-through figure component and its controls (Figures 1 to 3). Behavior is in js/figure.js. */
+
+/* ---------- Figures ---------- */
+.figure { display: block; margin: var(--sp-5) 0 0; padding-top: var(--sp-3); }
+.figure h3 { margin: 0 0 var(--sp-3); font-size: 22px; text-align: center; }
+.fig-scroll { overflow-x: auto; cursor: pointer; border-radius: var(--radius); -webkit-tap-highlight-color: transparent; }
+/* Plate behind the authors' light-only SVG figures (class added by js/figure.js). Transparent unless a theme sets --figure-plate. */
+.fig-scroll.plate { background: var(--figure-plate); padding: var(--figure-plate-pad); border-radius: var(--figure-plate-radius); }
+.fig-scroll:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; }
+.scroll-hint { margin: 0 0 6px; font: 400 12px/1.4 var(--mono); color: var(--faint); }
+.scroll-hint[hidden] { display: none; }
+.fig-svg { width: 100%; height: auto; display: block; }
+@media (max-width: 820px) { .fig-svg.wide-720 { min-width: 720px; } }
+/* Figures 2 and 3 are drawn with the same scale as Figure 1 (rendered px per drawing unit), so their labels are the same size.
+ * Figure 1 fills the column: its drawing is 804 units wide, so a drawing of N units is N/804 of the column, centered.
+ * Phones: the same 720 px floor per 804 units as Figure 1 (so the labels stay readable), and the same sideways scroll. */
+#fig2 .fig-svg { width: calc(100% * 465 / 804); margin-inline: auto; }
+#fig3 .fig-svg { width: calc(100% * 475.5 / 804); margin-inline: auto; }
+@media (max-width: 820px) {
+  #fig2 .fig-svg { min-width: calc(720px * 465 / 804); }
+  #fig3 .fig-svg { min-width: calc(720px * 475.5 / 804); }
+}
+.figure figcaption { max-width: var(--measure); margin: var(--sp-3) auto 0; font-size: 15px; line-height: 1.6; color: var(--muted); }
+
+/* Figure controls: Previous, step tabs, Next. Plain text tabs with a thin underline on the active one. */
+.figctl { display: flex; align-items: center; justify-content: center; gap: 4px; margin: var(--sp-3) 0 0; }
+.navbtn {
+  flex: none; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
+  padding: 0; border: 0; background: none; color: var(--muted); cursor: pointer;
+}
+.navbtn svg { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.navbtn:hover { color: var(--ink); }
+.chips { display: flex; flex-wrap: nowrap; align-items: center; gap: 2px; min-width: 0; }
+.chip {
+  flex: none; min-width: 32px; min-height: 34px; padding: 0 9px; border: 0; background: none; color: var(--muted); cursor: pointer;
+  font: 400 13px/1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+}
+.chip-ov { display: inline-flex; align-items: center; justify-content: center; padding: 0 11px; }
+.ov-icon { display: none; fill: none; stroke: currentColor; stroke-width: 1.3; }
+.chip:hover { color: var(--ink); }
+.chip.active { color: var(--accent); box-shadow: inset 0 -1px 0 var(--accent); }
+.chip:focus-visible, .navbtn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.steplabel { margin: var(--sp-2) 0 0; min-height: 1.5em; text-align: center; font-size: 15px; line-height: 1.5; font-weight: 500; color: var(--ink); }
+.steplabel .sl-n { margin-right: 10px; font: 400 12px/1 var(--mono); letter-spacing: 0.06em; color: var(--faint); }
+.steplabel i { font-family: var(--serif); font-size: 1.12em; font-weight: 400; }
+.step-hint { margin: var(--sp-1) 0 0; text-align: center; font: 400 12px/1.4 var(--mono); color: var(--faint); }
+
+/* Overlay on the authors' figures: veil, outlines, drawn-on arrows, flowing dots */
+.ov { pointer-events: none; }
+.ov-veil { fill: var(--veil); fill-opacity: var(--veil-opacity); transition: opacity 0.25s ease; }
+.fig-svg.overview .ov-veil { opacity: 0; transition-duration: 0.4s; }
+.ov .hole { opacity: 0; transition: opacity 0.25s ease; }
+.ov .hole.on { opacity: 1; }
+.ov-out { fill: none; stroke: var(--fig-accent); stroke-width: 2.2; opacity: 0; transition: opacity 0.2s ease; }
+.ov-out.on { opacity: 1; }
+.ov-out.bad { stroke: var(--fig-accent); stroke-dasharray: 5 3; }
+.ov-draw {
+  fill: none; stroke: var(--fig-accent); stroke-width: 3; stroke-linecap: round; stroke-opacity: 0.65;
+  stroke-dasharray: 100 100; stroke-dashoffset: 100; opacity: 0;
+  transition: opacity 0.15s ease, stroke-dashoffset 0s linear 0.15s;
+}
+.ov-draw.on { stroke-dashoffset: 0; opacity: 1; transition: opacity 0.05s linear 0.1s, stroke-dashoffset 0.4s ease-out 0.1s; }
+.ov-flow { opacity: 0; transition: opacity 0.25s ease; }
+.ov-flow.on { opacity: 1; }
+.ov .dots { fill: none; stroke: var(--fig-accent); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 0.1 14; }
+.ov .dots.halo { stroke: var(--flow-halo); stroke-width: 7.5; }
+.ov-flow.on .dots { animation: flowdots 0.34s linear infinite; }
+@keyframes flowdots { to { stroke-dashoffset: -14.1; } }
+.figure.reduced .ov-flow { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ov *, .chip, .navbtn, .ov-veil { transition: none !important; }
+  .ov .dots { animation: none !important; }
+  .ov-flow { display: none; }
+}
+
+/* ---------- Phones ---------- */
+@media (max-width: 640px) {
+  .figure { margin-top: var(--sp-5); }
+  .figure h3 { margin-bottom: var(--sp-2); }
+  .figctl { gap: 2px; }
+  .steplabel { min-height: 3em; }
+  .navbtn { width: 32px; height: 36px; }
+  .chip { min-width: 30px; min-height: 36px; padding: 0 8px; }
+  .chip-ov { padding: 0 9px; }
+  .ov-icon { display: block; }
+  .ov-text { display: none; }
+}
