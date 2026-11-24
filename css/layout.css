@@ -1,0 +1,157 @@
+/* Page frame: font faces, top nav, hero, sections, bottom nav, and the responsive rules for them. */
+
+/* The @font-face rules sit in this file, not in theme.css, on purpose. Chrome re-collects the font faces of a
+ * sheet that has viewport @media rules when the viewport resizes, as the old single style.css did. That resets
+ * the local() fallback faces from "error" (system font not installed) to "unloaded", which the verify script's
+ * "no failed face" check expects. */
+/* ---------- Fonts: local woff2 files, Latin subset (see fonts/LICENSE-*.txt, SIL OFL 1.1) ---------- */
+@font-face { font-family: "Newsreader"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url(../fonts/newsreader-latin-400-normal.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Newsreader"; font-style: italic; font-weight: 400; font-display: swap;
+  src: url(../fonts/newsreader-latin-400-italic.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Newsreader"; font-style: normal; font-weight: 500; font-display: swap;
+  src: url(../fonts/newsreader-latin-500-normal.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Instrument Sans"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url(../fonts/instrument-sans-latin-400-normal.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Instrument Sans"; font-style: normal; font-weight: 500; font-display: swap;
+  src: url(../fonts/instrument-sans-latin-500-normal.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url(../fonts/jetbrains-mono-latin-400-normal.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 500; font-display: swap;
+  src: url(../fonts/jetbrains-mono-latin-500-normal.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+/* Metric-matched local fallbacks (system fonts, no files). */
+@font-face { font-family: "Newsreader Fallback"; font-style: normal; src: local("Iowan Old Style Roman"), local("IowanOldStyle-Roman"); size-adjust: 95.16%; ascent-override: 69.53%; descent-override: 25.07%; line-gap-override: 0%; }
+@font-face { font-family: "Newsreader Fallback Win"; font-style: normal; src: local("Times New Roman"), local("TimesNewRomanPSMT"); size-adjust: 105.72%; ascent-override: 69.53%; descent-override: 25.07%; line-gap-override: 0%; }
+@font-face { font-family: "Instrument Sans Fallback"; font-style: normal; src: local("Helvetica Neue"), local("HelveticaNeue"); size-adjust: 103.25%; ascent-override: 93.9%; descent-override: 24.2%; line-gap-override: 0%; }
+@font-face { font-family: "Instrument Sans Fallback Win"; font-style: normal; src: local("Arial"), local("ArialMT"); size-adjust: 103.25%; ascent-override: 93.9%; descent-override: 24.2%; line-gap-override: 0%; }
+@font-face { font-family: "JetBrains Mono Fallback"; font-style: normal; src: local("Menlo-Regular"); size-adjust: 100%; ascent-override: 102%; descent-override: 30%; line-gap-override: 0%; }
+@font-face { font-family: "JetBrains Mono Fallback Win"; font-style: normal; src: local("Consolas"); size-adjust: 109.09%; ascent-override: 93.5%; descent-override: 27.5%; line-gap-override: 0%; }
+
+/* ---------- Layout scale ----------
+ * One page width for the nav, hero, every figure, demo and result card (1040 px inside on a wide screen),
+ * one reading column for text blocks, both centered on the same axis. Spacing comes from one scale. */
+:root {
+  --page-w: 1120px;
+  --measure: 660px;
+  --sp-1: 8px;
+  --sp-2: 16px;
+  --sp-3: 24px;
+  --sp-4: 40px;
+  --sp-5: 64px;
+  --sp-6: clamp(64px, 8vw, 104px);
+}
+
+/* ---------- Top navigation ---------- */
+.top {
+  width: min(var(--page-w), 100%); min-height: 76px; margin: 0 auto; padding: 0 var(--gutter);
+  display: flex; align-items: center; justify-content: flex-end; gap: 32px;
+}
+.nav { display: flex; align-items: center; gap: clamp(16px, 2.4vw, 28px); font: 400 13px/1 var(--mono); }
+.nav a { color: var(--muted); text-decoration: none; padding: 8px 0; border-bottom: 2px solid transparent; }
+.nav a:hover { color: var(--ink); }
+.nav a[aria-current] { color: var(--ink); border-bottom-color: var(--ink); }
+
+/* ---------- Hero ---------- */
+.hero { width: min(var(--page-w), 100%); margin: 0 auto; padding: var(--sp-4) var(--gutter) 0; }
+.intro-copy { max-width: 800px; margin: 0 auto; padding-top: var(--sp-1); text-align: center; }
+.hero h1 {
+  margin: 0; font: 400 clamp(32px, 4vw, 46px)/1.08 var(--serif); letter-spacing: -0.02em; text-wrap: balance;
+}
+.tagline { max-width: 34em; margin: var(--sp-2) auto 0; color: var(--muted); font-size: 18px; line-height: 1.45; text-wrap: pretty; }
+
+/* Two-column header: title, authors and links on the left; TL;DR and the short abstract on the right, split by a hairline.
+ * Under 900 px the columns stack and the hairline becomes a top rule. */
+.masthead {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 0;
+  max-width: var(--content-width); margin: 0 auto; padding-bottom: var(--sp-4); border-bottom: 1px solid var(--line);
+}
+.masthead .id-col { padding-right: var(--sp-4); }
+.masthead .tl-col { padding-left: var(--sp-4); border-left: 1px solid var(--line); }
+.masthead h1 { text-align: left; font-size: clamp(32px, 3.6vw, 44px); }
+.masthead h1 .sub { display: block; margin-top: 10px; font-size: 0.56em; line-height: 1.2; color: var(--muted); letter-spacing: -0.005em; }
+.authors { margin: var(--sp-3) 0 0; font-size: 16px; color: var(--ink); }
+.affil { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
+.links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--sp-3); }
+.links a, .links span {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px;
+  font: 400 13px/1 var(--mono); color: var(--ink); text-decoration: none;
+}
+.links a:hover { border-color: var(--muted); }
+.links .soon { color: var(--faint); }
+.links .soon small { font-size: 11px; }
+.links svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.kicker { margin: 0 0 6px; font: 400 11px/1.2 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); }
+.tldr { margin: 0 0 var(--sp-3); font: 400 21px/1.4 var(--serif); color: var(--ink); text-wrap: pretty; }
+.tldr em { color: var(--accent); font-style: italic; }
+.short-abs p { font-size: 15px; line-height: 1.62; color: var(--muted); }
+.short-abs p:last-child { margin-bottom: 0; }
+@media (max-width: 899px) {
+  .masthead { grid-template-columns: minmax(0, 1fr); }
+  .masthead .id-col { padding-right: 0; }
+  .masthead .tl-col { padding-left: 0; border-left: 0; margin-top: var(--sp-3); padding-top: var(--sp-3); border-top: 1px solid var(--line); }
+}
+
+/* ---------- Sections ---------- */
+main { width: min(var(--page-w), 100%); margin: 0 auto; padding: 0 var(--gutter) var(--sp-6); }
+.sec { margin-top: var(--sp-6); scroll-margin-top: 16px; }
+.hero + main > .sec:first-child { margin-top: var(--sp-4); }   /* the hero ends at a rule: a shorter gap than between sections */
+.sec + .sec { margin-top: var(--sp-5); padding-top: var(--sp-5); border-top: 1px solid var(--line); }   /* the only rule between blocks: parts inside a section are separated by space */
+.text { max-width: var(--measure); margin-inline: auto; }
+.sec > .text > h2 { margin-bottom: var(--sp-2); text-align: center; }
+.sec > .note { max-width: var(--measure); margin-inline: auto; }
+
+/* ---------- Bottom navigation ---------- */
+.pager { display: flex; justify-content: space-between; gap: var(--sp-3); margin-top: var(--sp-6); padding-top: 20px; border-top: 1px solid var(--line); }
+.pager a { font: 400 20px/1.3 var(--serif); text-decoration: none; padding: 6px 0; }
+.pager a:hover { text-decoration: underline; text-decoration-thickness: 1px; text-decoration-color: var(--ink); text-underline-offset: 5px; }
+.pager .arrow { width: 24px; height: 24px; margin-inline: 8px; }
+.pager a:first-child .arrow { margin-left: 0; }
+.pager a:last-child .arrow { margin-right: 0; }
+
+/* ---------- Phones ---------- */
+@media (max-width: 640px) {
+  .top { min-height: 66px; gap: 16px; }
+  .nav { gap: 12px; font-size: 11px; }
+  .hero { padding-top: var(--sp-3); }
+  .tagline { font-size: 16px; }
+  .pager a { font-size: 18px; }
+}
+@media (max-width: 380px) {
+  .top { flex-wrap: wrap; row-gap: 0; padding-block: 12px 4px; }
+  .nav { width: 100%; justify-content: space-between; gap: 8px; }   /* the five links total 238 px at 11 px: they must fit 280 px at 320 */
+}
+@media (pointer: coarse) {
+  .nav a { padding: 12px 0 10px; }
+}
+
+/* ---------- Wide screens: the section links sit in the left margin ----------
+ * The empty .top row keeps its height so the hero does not move. --side-nav-room is the space the fixed list
+ * needs at each side (left offset + list width + gap); the wide result cards stay clear of it. */
+@media (min-width: 1400px) {
+  :root { --side-nav-room: 128px; }
+  .nav {
+    position: fixed; z-index: 5; top: 50%; transform: translateY(-50%); left: max(24px, calc((100vw - 1360px) / 2 - 112px));
+    flex-direction: column; align-items: stretch; gap: 0; font: 400 14px/1.2 var(--sans);
+    box-shadow: inset 1px 0 0 var(--line);   /* one continuous track; the current link marks its part of it */
+  }
+  .nav a { position: relative; padding: 9px 0 9px 16px; border-bottom: 0; color: var(--faint); transition: color .15s; }
+  .nav a::before {
+    content: ""; position: absolute; left: 0; top: 6px; bottom: 6px; width: 2px; border-radius: 1px;
+    background: var(--ink); opacity: 0; transition: opacity .15s;
+  }
+  .nav a:hover { color: var(--ink); }
+  .nav a[aria-current] { color: var(--ink); }
+  .nav a[aria-current]::before { opacity: 1; }
+  .nav a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 2px; }
+}
+@media (min-width: 1400px) and (prefers-reduced-motion: reduce) {
+  .nav a, .nav a::before { transition: none; }
+}
